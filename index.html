@@ -2,49 +2,51 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Novel Planner - เมนูหลัก</title>
+  <title>สร้างนิยาย</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 40px;
-      background-color: #f8f8f8;
-      text-align: center;
-    }
-    h1 {
-      color: #333;
-    }
+    body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+    h1 { text-align: center; }
     .menu {
-      margin-top: 40px;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
     }
-    a {
-      display: inline-block;
-      background-color: #4CAF50;
+    .menu a {
+      background: #4CAF50;
       color: white;
-      padding: 12px 24px;
+      padding: 10px 20px;
+      border-radius: 6px;
       text-decoration: none;
-      border-radius: 8px;
-      font-size: 18px;
-      transition: background-color 0.2s ease;
+      font-size: 16px;
     }
-    a:hover {
-      background-color: #45a049;
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: white;
     }
   </style>
 </head>
 <body>
-  <h1>📚 Novel Planner</h1>
-  <p>วางแผนนิยายของคุณอย่างเป็นระบบ</p>
+  <h1>📚 สร้างนิยายใหม่</h1>
 
   <div class="menu">
-    <a href="theme.html">🧠 จัดการธีมเรื่อง</a>
-    <a href="character.html">👤 จัดการตัวละคร</a>
-    <a href="world.html">🌍 จัดการโลกนิยาย</a>
-    <a href="chapter.html">📖 จัดการตอน & บทย่อย</a>
-    <a href="export.html">📤 Export เป็น PDF</a>
+    <a href="#" onclick="loadSection('theme.html')">🧠 ธีม</a>
+    <a href="#" onclick="loadSection('character.html')">👤 ตัวละคร</a>
+    <a href="#" onclick="loadSection('world.html')">🌍 โลก</a>
+    <a href="#" onclick="loadSection('chapter.html')">📖 ตอน</a>
+    <a href="export.html" target="_blank">📤 Export PDF</a>
   </div>
+
+  <iframe id="sectionFrame" src="theme.html"></iframe>
+
+  <script>
+    function loadSection(url) {
+      document.getElementById('sectionFrame').src = url;
+    }
+  </script>
 </body>
 </html>

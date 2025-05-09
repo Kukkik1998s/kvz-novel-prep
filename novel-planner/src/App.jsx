@@ -6,8 +6,6 @@ import CharacterTab from './components/CharacterTab';
 import WorldTab from './components/WorldTab';
 import ChapterTab from './components/ChapterTab';
 import ExportPDF from './components/ExportPDF';
-
-
 import "./App.css";
 
 function App() {

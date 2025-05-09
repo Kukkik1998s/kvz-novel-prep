@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
-  "homepage": "https://Kukkik1998s.github.io/kvz-novel-prep",
+  "homepage": "https://kukkik1998s.github.io/kvz-novel-prep/",
   "dependencies": {
     "firebase": "^11.7.1",
     "jspdf": "^3.0.1",

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>จัดการตอนและบทย่อย</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background-color: #f9f9f9; }
+    input, textarea, button { display: block; margin: 5px 0; padding: 10px; width: 100%; }
+    .chapter-item { border: 1px solid #999; background: #fff; padding: 10px; margin-top: 20px; border-radius: 8px; }
+    .sub-item { margin-left: 20px; border-top: 1px dashed #aaa; padding-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>📖 เพิ่มตอนหลัก</h2>
+  <input type="text" id="chapter-title" placeholder="ชื่อตอน">
+  <button onclick="addChapter()">บันทึกตอน</button>
+
+  <h2>📋 ตอนนิยายทั้งหมด</h2>
+  <div id="chapterList"></div>
+
+  <div id="subModal" style="display:none; border:1px solid #ccc; padding:10px; background:#eee;">
+    <h3>เพิ่มบทย่อยใน <span id="currentChapterTitle"></span></h3>
+    <input type="text" id="sub-title" placeholder="ชื่อตอนย่อย">
+    <textarea id="sub-content" placeholder="เนื้อหา"></textarea>
+    <button onclick="saveSubchapter()">บันทึกบทย่อย</button>
+    <button onclick="closeSubModal()">ยกเลิก</button>
+  </div>
+
+  <script type="module">
+    import { db } from './firebase-init.js';
+    import {
+      ref, push, onValue, update, remove, get
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+    const chapterList = document.getElementById("chapterList");
+    let chapterOrder = [];
+
+    const subModal = document.getElementById("subModal");
+    const subTitleInput = document.getElementById("sub-title");
+    const subContentInput = document.getElementById("sub-content");
+    const currentChapterTitle = document.getElementById("currentChapterTitle");
+
+    let currentChapterId = null;
+
+    function addChapter() {
+      const title = document.getElementById("chapter-title").value.trim();
+      if (title) {
+        const order = chapterOrder.length;
+        push(ref(db, 'chapters'), { title, order });
+        document.getElementById("chapter-title").value = '';
+      }
+    }
+
+    function renderChapters(data) {
+      chapterList.innerHTML = "";
+      chapterOrder = [];
+
+      Object.entries(data)
+        .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+        .forEach(([chapterId, chapter]) => {
+          chapterOrder.push(chapterId);
+          const div = document.createElement("div");
+          div.className = "chapter-item";
+          div.dataset.id = chapterId;
+
+          const subchapters = chapter.subchapters || {};
+          const subOrder = Object.entries(subchapters)
+            .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+            .map(([subId, sub]) => `
+              <div class="sub-item" data-id="${subId}">
+                <strong>${sub.title}</strong>
+                <p>${sub.content}</p>
+                <button onclick="deleteSubchapter('${chapterId}', '${subId}')">ลบบทย่อย</button>
+              </div>
+            `).join("");
+
+          div.innerHTML = `
+            <strong>${chapter.title}</strong>
+            <button onclick="deleteChapter('${chapterId}')">ลบ</button>
+            <button onclick="openSubModal('${chapterId}', '${chapter.title}')">เพิ่มบทย่อย</button>
+            <div class="sub-list" id="sublist-${chapterId}">
+              ${subOrder || '<em>ไม่มีบทย่อย</em>'}
+            </div>
+          `;
+          chapterList.appendChild(div);
+
+          Sortable.create(document.getElementById(`sublist-${chapterId}`), {
+            animation: 150,
+            onEnd: () => {
+              const ids = Array.from(document.getElementById(`sublist-${chapterId}`).children).map(el => el.dataset.id);
+              ids.forEach((subId, index) => {
+                update(ref(db, `chapters/${chapterId}/subchapters/${subId}`), { order: index });
+              });
+            }
+          });
+        });
+
+      Sortable.create(chapterList, {
+        animation: 200,
+        onEnd: () => {
+          const ids = Array.from(chapterList.children).map(el => el.dataset.id);
+          ids.forEach((id, index) => {
+            update(ref(db, `chapters/${id}`), { order: index });
+          });
+        }
+      });
+    }
+
+    function loadChapters() {
+      onValue(ref(db, 'chapters'), (snapshot) => {
+        const data = snapshot.val() || {};
+        renderChapters(data);
+      });
+    }
+
+    window.deleteChapter = (id) => {
+      if (confirm("ลบตอนนี้ทั้งหมด (รวมบทย่อย)?")) {
+        remove(ref(db, `chapters/${id}`));
+      }
+    };
+
+    window.openSubModal = (chapterId, title) => {
+      currentChapterId = chapterId;
+      currentChapterTitle.innerText = title;
+      subModal.style.display = 'block';
+    };
+
+    window.closeSubModal = () => {
+      currentChapterId = null;
+      subModal.style.display = 'none';
+      subTitleInput.value = "";
+      subContentInput.value = "";
+    };
+
+    window.saveSubchapter = () => {
+      if (!currentChapterId) return;
+
+      const title = subTitleInput.value.trim();
+      const content = subContentInput.value.trim();
+      if (title && content) {
+        const subRef = ref(db, `chapters/${currentChapterId}/subchapters`);
+        get(subRef).then(snapshot => {
+          const data = snapshot.val() || {};
+          const order = Object.keys(data).length;
+          push(subRef, { title, content, order });
+          closeSubModal();
+        });
+      }
+    };
+
+    window.deleteSubchapter = (chapterId, subId) => {
+      if (confirm("ลบบทย่อยนี้หรือไม่?")) {
+        remove(ref(db, `chapters/${chapterId}/subchapters/${subId}`));
+      }
+    };
+
+    loadChapters();
+  </script>
+</body>
+</html>
